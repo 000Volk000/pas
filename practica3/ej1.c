@@ -1,8 +1,10 @@
-#include <stdio.h>  // printf() scanf()
-#include <unistd.h> // Variables como optarg, optfind, etc..
-#include <stdlib.h> // abort()
-#include <ctype.h>  // isprint()
-#include <getopt.h> // long_options[]
+#include <stdio.h>     // printf() scanf()
+#include <unistd.h>    // Variables como optarg, optfind, etc..
+#include <stdlib.h>    // abort()
+#include <ctype.h>     // isprint()
+#include <getopt.h>    // long_options[]
+#include <sys/types.h> // uid_t
+#include <pwd.h>       // struct passwd, getpwuid
 
 int main(int argc, char *argv[])
 {
@@ -50,5 +52,53 @@ int main(int argc, char *argv[])
 
     // if (uvalue == NULL) // Para el caso en el que no se ponga la flag -u
     //     uvalue = "ValorPorDefecto";
+
+    if (uvalue != NULL)
+    {
+        int uid;
+        if ((uid = atoi(uvalue)))
+        {
+            struct passwd *pwd;
+            pwd = getpwuid(uid);
+            if (pwd == NULL)
+            {
+                printf("Ha surjido un error en la busqueda del passwd");
+                return -1;
+            }
+
+            printf("#######################################################\n");
+            printf("Información para UID %d:\n", uid);
+            printf("  Nombre de usuario: %s\n", pwd->pw_name);
+            printf("  Password: %s\n", pwd->pw_passwd);
+            printf("  UID: %u\n", pwd->pw_uid);
+            printf("  GID: %u\n", pwd->pw_gid);
+            printf("  Información GECOS: %s\n", pwd->pw_gecos);
+            printf("  Directorio personal: %s\n", pwd->pw_dir);
+            printf("  Shell: %s\n", pwd->pw_shell);
+            printf("#######################################################\n");
+        }
+        else
+        {
+            struct passwd *pwd;
+            pwd = getpwnam(uvalue);
+            if (pwd == NULL)
+            {
+                printf("Ha surjido un error en la busqueda del passwd");
+                return -1;
+            }
+
+            printf("#######################################################\n");
+            printf("Información para usuario %s:\n", uvalue);
+            printf("  Nombre de usuario: %s\n", pwd->pw_name);
+            printf("  Password: %s\n", pwd->pw_passwd);
+            printf("  UID: %u\n", pwd->pw_uid);
+            printf("  GID: %u\n", pwd->pw_gid);
+            printf("  Información GECOS: %s\n", pwd->pw_gecos);
+            printf("  Directorio personal: %s\n", pwd->pw_dir);
+            printf("  Shell: %s\n", pwd->pw_shell);
+            printf("#######################################################\n");
+        }
+    }
+
     return 0;
 }
