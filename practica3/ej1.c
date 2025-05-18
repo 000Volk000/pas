@@ -1,15 +1,17 @@
-#include <stdio.h>  // printf() scanf()
-#include <unistd.h> // Variables como optarg, optfind, etc..
-#include <stdlib.h> // abort()
-#include <ctype.h>  // isprint()
-#include <getopt.h> // long_options[]
-#include <pwd.h>    // struct passwd, getpwuid
-#include <grp.h>    // struct group, getgrgid, getgrnam
+#include <stdio.h>   // printf() scanf()
+#include <unistd.h>  // Variables como optarg, optfind, etc..
+#include <stdlib.h>  // abort()
+#include <ctype.h>   // isprint()
+#include <getopt.h>  // long_options[]
+#include <pwd.h>     // struct passwd, getpwuid
+#include <grp.h>     // struct group, getgrgid, getgrnam
+#include <stdbool.h> // bool
 
 int main(int argc, char *argv[])
 {
     char *uvalue = NULL;
     char *gvalue = NULL;
+    bool aflag = false;
     int check;
 
     static struct option long_options[] = // Struct necesario para las versiones largas de las opciónes
@@ -17,11 +19,12 @@ int main(int argc, char *argv[])
             //  {<nombre largo>, <recibe/no recibe argumento>, NULL, <nombre corto>}
             {"user", required_argument, NULL, 'u'},
             {"group", required_argument, NULL, 'g'},
+            {"active", no_argument, NULL, 'a'},
 
             {0, 0, 0, 0} // Siempre tiene que estar el último
         };
 
-    while ((check = getopt_long(argc, argv, "u:g:", long_options, NULL)) != -1)
+    while ((check = getopt_long(argc, argv, "u:g:a", long_options, NULL)) != -1)
     {
         switch (check)
         {
@@ -30,6 +33,9 @@ int main(int argc, char *argv[])
             break;
         case 'g':
             gvalue = optarg;
+            break;
+        case 'a':
+            aflag = true;
             break;
 
         case '?': // En caso de no usar getopt_long
@@ -55,8 +61,13 @@ int main(int argc, char *argv[])
     for (i = optind; i < argc; i++) // optind == Indice por donde se ha quedado getopt()
         printf("\nArgumento \"%s\" de la línea de comandos que NO ES UNA OPCIÓN.\n\n", argv[i]);
 
-    // if (uvalue == NULL) // Para el caso en el que no se ponga la flag -u
+    // if (uvalue == NULL) // Para el caso en el que no se ponga una flag con argumento
     //     uvalue = "ValorPorDefecto";
+
+    if (aflag)
+    {
+        uvalue = getenv("USER");
+    }
 
     if (uvalue != NULL)
     {
