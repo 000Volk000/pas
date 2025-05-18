@@ -19,7 +19,8 @@ http://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Option-Example.htm
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int c;
 
     /* Estructura a utilizar por getoptlong */
@@ -32,8 +33,7 @@ int main(int argc, char **argv) {
         {"create", required_argument, NULL, 'c'},
         {"file", required_argument, NULL, 'f'},
         /* Necesario para indicar el final de las opciones */
-        {0, 0, 0, 0}
-    };
+        {0, 0, 0, 0}};
 
     /* Estas variables servirán para almacenar el resultado de procesar la línea
      * de comandos */
@@ -45,10 +45,12 @@ int main(int argc, char **argv) {
 
     /* Deshabilitar la impresión de errores por defecto */
     /* opterr=0; */
-    while ((c = getopt_long(argc, argv, "abd:c:f:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "abd:c:f:", long_options, NULL)) != -1)
+    {
         printf("optind: %d, optarg: %s, optopt: %c\n", optind, optarg, optopt);
 
-        switch (c) {
+        switch (c)
+        {
         case 'a':
             // printf("Opción -a\n");
             aflag = true;
@@ -91,7 +93,8 @@ int main(int argc, char **argv) {
 
     /* Imprimir el resto de argumentos de la línea de comandos que no son
      * opciones con "-" */
-    if (optind < argc) {
+    if (optind < argc)
+    {
         printf("Argumentos ARGV que no son opciones: ");
         while (optind < argc)
             printf("%s ", argv[optind++]);
