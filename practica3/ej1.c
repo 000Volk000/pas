@@ -1,30 +1,35 @@
-#include <stdio.h>     // printf() scanf()
-#include <unistd.h>    // Variables como optarg, optfind, etc..
-#include <stdlib.h>    // abort()
-#include <ctype.h>     // isprint()
-#include <getopt.h>    // long_options[]
-#include <sys/types.h> // uid_t
-#include <pwd.h>       // struct passwd, getpwuid
+#include <stdio.h>  // printf() scanf()
+#include <unistd.h> // Variables como optarg, optfind, etc..
+#include <stdlib.h> // abort()
+#include <ctype.h>  // isprint()
+#include <getopt.h> // long_options[]
+#include <pwd.h>    // struct passwd, getpwuid
+#include <grp.h>    // struct group, getgrgid, getgrnam
 
 int main(int argc, char *argv[])
 {
     char *uvalue = NULL;
+    char *gvalue = NULL;
     int check;
 
     static struct option long_options[] = // Struct necesario para las versiones largas de las opciónes
         {
             //  {<nombre largo>, <recibe/no recibe argumento>, NULL, <nombre corto>}
             {"user", required_argument, NULL, 'u'},
+            {"group", required_argument, NULL, 'g'},
 
             {0, 0, 0, 0} // Siempre tiene que estar el último
         };
 
-    while ((check = getopt_long(argc, argv, "u:", long_options, NULL)) != -1)
+    while ((check = getopt_long(argc, argv, "u:g:", long_options, NULL)) != -1)
     {
         switch (check)
         {
         case 'u':
             uvalue = optarg; // optarg == Option Argument
+            break;
+        case 'g':
+            gvalue = optarg;
             break;
 
         case '?': // En caso de no usar getopt_long
@@ -96,6 +101,70 @@ int main(int argc, char *argv[])
             printf("  Información GECOS: %s\n", pwd->pw_gecos);
             printf("  Directorio personal: %s\n", pwd->pw_dir);
             printf("  Shell: %s\n", pwd->pw_shell);
+            printf("#######################################################\n");
+        }
+    }
+
+    if (gvalue != NULL)
+    {
+        int gid;
+
+        if ((gid = atoi(gvalue)))
+        {
+            struct group *grp;
+            grp = getgrgid(gid);
+            if (grp == NULL)
+            {
+                printf("Ha surjido un error en la busqueda del group para GID %d\n", gid);
+                return -1;
+            }
+
+            printf("#######################################################\n");
+            printf("Información para GID %d:\n", gid);
+            printf("  Nombre del grupo: %s\n", grp->gr_name);
+            printf("  Password: %s\n", grp->gr_passwd);
+            printf("  GID: %u\n", grp->gr_gid);
+            printf("  Miembros del grupo:\n");
+            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
+            {
+                for (char **member = grp->gr_mem; *member != NULL; member++)
+                {
+                    printf("    %s\n", *member);
+                }
+            }
+            else
+            {
+                printf("    (ninguno)\n");
+            }
+            printf("#######################################################\n");
+        }
+        else
+        {
+            struct group *grp;
+            grp = getgrnam(gvalue);
+            if (grp == NULL)
+            {
+                printf("Ha surjido un error en la busqueda del group con nombre '%s'\n", gvalue);
+                return -1;
+            }
+
+            printf("#######################################################\n");
+            printf("Información para el grupo %s:\n", gvalue);
+            printf("  Nombre del grupo: %s\n", grp->gr_name);
+            printf("  Password: %s\n", grp->gr_passwd);
+            printf("  GID: %u\n", grp->gr_gid);
+            printf("  Miembros del grupo:\n");
+            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
+            {
+                for (char **member = grp->gr_mem; *member != NULL; member++)
+                {
+                    printf("    %s\n", *member);
+                }
+            }
+            else
+            {
+                printf("    (ninguno)\n");
+            }
             printf("#######################################################\n");
         }
     }
