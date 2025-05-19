@@ -8,6 +8,27 @@
 #include <stdbool.h> // bool
 #include <string.h>  //strtok()
 
+void helpPrint(char *arg)
+{
+    printf("Uso: %s [opciones]\n", arg);
+    printf("Opciones:\n");
+    printf("  -u, --user <uid|nombre>   Muestra información del usuario especificado.\n");
+    printf("  -g, --group <gid|nombre>  Muestra información del grupo especificado.\n");
+    printf("  -a, --active              Muestra información del usuario actual.\n");
+    printf("  -m, --maingroup           Combinado con -u o -a, muestra el grupo principal del usuario.\n");
+    printf("  -s, --allgroups           Muestra información de todos los grupos del sistema.\n");
+    printf("  -h, --help                Muestra esta ayuda y sale.\n");
+    printf("\nCombinaciones válidas:\n");
+    printf("  %s                       (equivale a --active --maingroup)\n", arg);
+    printf("  %s --help\n", arg);
+    printf("  %s --user <uid|nombre>\n", arg);
+    printf("  %s --user <uid|nombre> --maingroup\n", arg);
+    printf("  %s --active\n", arg);
+    printf("  %s --active --maingroup\n", arg);
+    printf("  %s --group <gid|nombre>\n", arg);
+    printf("  %s --allgroups\n", arg);
+}
+
 void groupInfo(struct group *grp, char *msg)
 {
     printf("#######################################################\n");
@@ -48,11 +69,12 @@ int main(int argc, char *argv[])
             {"active", no_argument, NULL, 'a'},
             {"maingroup", no_argument, NULL, 'm'},
             {"allgroups", no_argument, NULL, 's'},
+            {"help", no_argument, NULL, 'h'},
 
             {0, 0, 0, 0} // Siempre tiene que estar el último
         };
 
-    while ((check = getopt_long(argc, argv, "u:g:ams", long_options, NULL)) != -1)
+    while ((check = getopt_long(argc, argv, "u:g:amsh", long_options, NULL)) != -1)
     {
         switch (check)
         {
@@ -71,6 +93,9 @@ int main(int argc, char *argv[])
         case 's':
             sflag = true;
             break;
+        case 'h':
+            helpPrint(argv[0]);
+            return 0;
 
         case '?': // En caso de no usar getopt_long
                   // // Opción no reconocida o sin argumento
@@ -95,6 +120,33 @@ int main(int argc, char *argv[])
     {
         aflag = true;
         mflag = true;
+    }
+
+    // char *uvalue = NULL;
+    // char *gvalue = NULL;
+    // bool aflag = false;
+    // bool mflag = false;
+    // bool sflag = false;
+
+    if ((uvalue != NULL) && (aflag || (gvalue != NULL) || sflag))
+    {
+        helpPrint(argv[0]);
+        return -1;
+    }
+    else if (aflag && ((uvalue != NULL) || (gvalue != NULL) || sflag))
+    {
+        helpPrint(argv[0]);
+        return -1;
+    }
+    else if ((gvalue != NULL) && (aflag || (uvalue != NULL) || sflag || mflag))
+    {
+        helpPrint(argv[0]);
+        return -1;
+    }
+    else if (sflag && (aflag || (uvalue != NULL) || (gvalue != NULL) || mflag))
+    {
+        helpPrint(argv[0]);
+        return -1;
     }
 
     int i;
