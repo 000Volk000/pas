@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
     char *uvalue = NULL;
     char *gvalue = NULL;
     bool aflag = false;
+    bool mflag = false;
+    unsigned int mvalue = 0;
     int check;
 
     static struct option long_options[] = // Struct necesario para las versiones largas de las opciónes
@@ -20,11 +22,12 @@ int main(int argc, char *argv[])
             {"user", required_argument, NULL, 'u'},
             {"group", required_argument, NULL, 'g'},
             {"active", no_argument, NULL, 'a'},
+            {"maingroup", no_argument, NULL, 'm'},
 
             {0, 0, 0, 0} // Siempre tiene que estar el último
         };
 
-    while ((check = getopt_long(argc, argv, "u:g:a", long_options, NULL)) != -1)
+    while ((check = getopt_long(argc, argv, "u:g:am", long_options, NULL)) != -1)
     {
         switch (check)
         {
@@ -36,6 +39,9 @@ int main(int argc, char *argv[])
             break;
         case 'a':
             aflag = true;
+            break;
+        case 'm':
+            mflag = true;
             break;
 
         case '?': // En caso de no usar getopt_long
@@ -92,6 +98,11 @@ int main(int argc, char *argv[])
             printf("  Directorio personal: %s\n", pwd->pw_dir);
             printf("  Shell: %s\n", pwd->pw_shell);
             printf("#######################################################\n");
+
+            if (mflag)
+            {
+                mvalue = pwd->pw_gid;
+            }
         }
         else
         {
@@ -113,14 +124,49 @@ int main(int argc, char *argv[])
             printf("  Directorio personal: %s\n", pwd->pw_dir);
             printf("  Shell: %s\n", pwd->pw_shell);
             printf("#######################################################\n");
+
+            if (mflag)
+            {
+                mvalue = pwd->pw_gid;
+            }
         }
     }
 
-    if (gvalue != NULL)
+    if ((gvalue != NULL) || (mvalue != 0))
     {
         int gid;
 
-        if ((gid = atoi(gvalue)))
+        if (mvalue != 0)
+        {
+            gid = mvalue;
+            struct group *grp;
+            grp = getgrgid(gid);
+            if (grp == NULL)
+            {
+                printf("Ha surjido un error en la busqueda del group para GID %d\n", gid);
+                return -1;
+            }
+
+            printf("#######################################################\n");
+            printf("Información del maingroup:\n");
+            printf("  Nombre del grupo: %s\n", grp->gr_name);
+            printf("  Password: %s\n", grp->gr_passwd);
+            printf("  GID: %u\n", grp->gr_gid);
+            printf("  Miembros del grupo:\n");
+            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
+            {
+                for (char **member = grp->gr_mem; *member != NULL; member++)
+                {
+                    printf("    %s\n", *member);
+                }
+            }
+            else
+            {
+                printf("    (ninguno)\n");
+            }
+            printf("#######################################################\n");
+        }
+        else if ((gid = atoi(gvalue)))
         {
             struct group *grp;
             grp = getgrgid(gid);
