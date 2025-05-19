@@ -6,6 +6,29 @@
 #include <pwd.h>     // struct passwd, getpwuid
 #include <grp.h>     // struct group, getgrgid, getgrnam
 #include <stdbool.h> // bool
+#include <string.h>  //strtok()
+
+void groupInfo(struct group *grp, char *msg)
+{
+    printf("#######################################################\n");
+    printf("%s\n", msg);
+    printf("  Nombre del grupo: %s\n", grp->gr_name);
+    printf("  Password: %s\n", grp->gr_passwd);
+    printf("  GID: %u\n", grp->gr_gid);
+    printf("  Miembros del grupo:\n");
+    if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
+    {
+        for (char **member = grp->gr_mem; *member != NULL; member++)
+        {
+            printf("    %s\n", *member);
+        }
+    }
+    else
+    {
+        printf("    (ninguno)\n");
+    }
+    printf("#######################################################\n");
+}
 
 int main(int argc, char *argv[])
 {
@@ -13,6 +36,7 @@ int main(int argc, char *argv[])
     char *gvalue = NULL;
     bool aflag = false;
     bool mflag = false;
+    bool sflag = false;
     unsigned int mvalue = 0;
     int check;
 
@@ -23,11 +47,12 @@ int main(int argc, char *argv[])
             {"group", required_argument, NULL, 'g'},
             {"active", no_argument, NULL, 'a'},
             {"maingroup", no_argument, NULL, 'm'},
+            {"allgroups", no_argument, NULL, 's'},
 
             {0, 0, 0, 0} // Siempre tiene que estar el último
         };
 
-    while ((check = getopt_long(argc, argv, "u:g:am", long_options, NULL)) != -1)
+    while ((check = getopt_long(argc, argv, "u:g:ams", long_options, NULL)) != -1)
     {
         switch (check)
         {
@@ -42,6 +67,9 @@ int main(int argc, char *argv[])
             break;
         case 'm':
             mflag = true;
+            break;
+        case 's':
+            sflag = true;
             break;
 
         case '?': // En caso de no usar getopt_long
@@ -134,95 +162,86 @@ int main(int argc, char *argv[])
 
     if ((gvalue != NULL) || (mvalue != 0))
     {
-        int gid;
+        int gid_val;
+        struct group *grp;
+        char msg[150];
 
         if (mvalue != 0)
         {
-            gid = mvalue;
-            struct group *grp;
-            grp = getgrgid(gid);
+            gid_val = mvalue;
+            grp = getgrgid(gid_val);
             if (grp == NULL)
             {
-                printf("Ha surjido un error en la busqueda del group para GID %d\n", gid);
-                return -1;
-            }
-
-            printf("#######################################################\n");
-            printf("Información del maingroup:\n");
-            printf("  Nombre del grupo: %s\n", grp->gr_name);
-            printf("  Password: %s\n", grp->gr_passwd);
-            printf("  GID: %u\n", grp->gr_gid);
-            printf("  Miembros del grupo:\n");
-            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
-            {
-                for (char **member = grp->gr_mem; *member != NULL; member++)
-                {
-                    printf("    %s\n", *member);
-                }
+                printf("Error: No se pudo encontrar el grupo para GID %d\n", gid_val);
             }
             else
-            {
-                printf("    (ninguno)\n");
-            }
-            printf("#######################################################\n");
+                groupInfo(grp, "Información del maingroup:");
         }
-        else if ((gid = atoi(gvalue)))
+        else if (gvalue != NULL)
         {
-            struct group *grp;
-            grp = getgrgid(gid);
-            if (grp == NULL)
+            if ((gid_val = atoi(gvalue)))
             {
-                printf("Ha surjido un error en la busqueda del group para GID %d\n", gid);
-                return -1;
-            }
-
-            printf("#######################################################\n");
-            printf("Información para GID %d:\n", gid);
-            printf("  Nombre del grupo: %s\n", grp->gr_name);
-            printf("  Password: %s\n", grp->gr_passwd);
-            printf("  GID: %u\n", grp->gr_gid);
-            printf("  Miembros del grupo:\n");
-            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
-            {
-                for (char **member = grp->gr_mem; *member != NULL; member++)
+                grp = getgrgid(gid_val);
+                if (grp == NULL)
                 {
-                    printf("    %s\n", *member);
+                    printf("Error: No se pudo encontrar el grupo para GID %d\n", gid_val);
+                }
+                else
+                {
+                    sprintf(msg, "Información para GID %d:", gid_val);
+                    groupInfo(grp, msg);
                 }
             }
             else
             {
-                printf("    (ninguno)\n");
+                grp = getgrnam(gvalue);
+                if (grp == NULL)
+                {
+                    printf("Error: No se pudo encontrar el grupo con nombre '%s'\n", gvalue);
+                }
+                else
+                {
+                    sprintf(msg, "Información para el grupo %s:", gvalue);
+                    groupInfo(grp, msg);
+                }
             }
-            printf("#######################################################\n");
+        }
+    }
+
+    if (sflag)
+    {
+        struct group *grp;
+        char msg[150];
+        FILE *fichGroup;
+        char buffer[1024];
+
+        printf("Mostrando todos los grupos del sistema:\n\n");
+
+        fichGroup = fopen("/etc/group", "r");
+        if (fichGroup == NULL)
+        {
+            printf("Error al abrir /etc/group");
         }
         else
         {
-            struct group *grp;
-            grp = getgrnam(gvalue);
-            if (grp == NULL)
+            while (fgets(buffer, sizeof(buffer), fichGroup) != NULL)
             {
-                printf("Ha surjido un error en la busqueda del group con nombre '%s'\n", gvalue);
-                return -1;
-            }
-
-            printf("#######################################################\n");
-            printf("Información para el grupo %s:\n", gvalue);
-            printf("  Nombre del grupo: %s\n", grp->gr_name);
-            printf("  Password: %s\n", grp->gr_passwd);
-            printf("  GID: %u\n", grp->gr_gid);
-            printf("  Miembros del grupo:\n");
-            if (grp->gr_mem != NULL && grp->gr_mem[0] != NULL)
-            {
-                for (char **member = grp->gr_mem; *member != NULL; member++)
+                char *groupName = strtok(buffer, ":");
+                if (groupName != NULL)
                 {
-                    printf("    %s\n", *member);
+                    grp = getgrnam(groupName);
+                    if (grp != NULL)
+                    {
+                        sprintf(msg, "Grupo: %s (GID: %u)", grp->gr_name, grp->gr_gid);
+                        groupInfo(grp, msg);
+                    }
+                    else
+                    {
+                        printf("Error: No se pudo encontrar el grupo con nombre '%s'\n", groupName);
+                    }
                 }
             }
-            else
-            {
-                printf("    (ninguno)\n");
-            }
-            printf("#######################################################\n");
+            fclose(fichGroup);
         }
     }
 
