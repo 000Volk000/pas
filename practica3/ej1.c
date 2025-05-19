@@ -91,6 +91,12 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (argc == 1)
+    {
+        aflag = true;
+        mflag = true;
+    }
+
     int i;
     for (i = optind; i < argc; i++) // optind == Indice por donde se ha quedado getopt()
         printf("\nArgumento \"%s\" de la línea de comandos que NO ES UNA OPCIÓN.\n\n", argv[i]);
